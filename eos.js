@@ -1,5 +1,29 @@
+/**
+ * # Eos Library #
+ *
+ * This is the Eos Library where most of Eos' actual features are
+ * implemented. The cool part is that anything you see here runs in
+ * the sandbox. That means not only can you use it, you can change
+ * it, too!
+ *
+ * As far as this documentation goes: Everything you see on the right
+ * is the actual code for Eos Library. The library is open-source and
+ * available on [Github](https://github.com/milovana/eos-lib).
+ */
+/**
+ * **`Eos`**
+ *
+ * All functionality in the Eos client library is contained in the
+ * `Eos` namespace.
+ */
 var Eos = {};
 
+/**
+ * **`Eos.Backend`**
+ *
+ * `Eos.Backend` is a static class that manages the communication with
+ * the outside of the sandbox.
+ */
 Eos.Backend = {
 	callbacks: {},
 	unique: 0,
@@ -42,6 +66,12 @@ Eos.Backend = {
 
 onmessage = Eos.Backend.handleMessage;
 
+/**
+ * **`Eos.Console`**
+ *
+ * With `Eos.Console` you can send messages to the host's console. This
+ * works with the debug consoles of most major browsers.
+ */
 Eos.Console = {
 	log: function () {
 		Eos.Backend.callApi('Console', 'log', Array.prototype.slice.call(arguments));
@@ -53,6 +83,14 @@ Eos.Console = {
 
 var console = Eos.Console;
 
+
+/**
+ * **`Class`**
+ *
+ * In this bit of code we create the root class for Eos' inheritance
+ * system. The system is based on code by John Resig and others but is
+ * heavily modified.
+ */
 (function(){
 	// Create the root class
 	var Class = this["Class"] = function () {};
@@ -99,9 +137,13 @@ for (i in this) {
 })();
 
 /**
- * Observable aspect.
+ * **`Eos.Observable`**
  *
- * <p>Adds an event system to the target.</p>
+ * Adds event handling to an object or class.
+ *
+ * This is an "aspect", which means you can apply it to any JavaScript
+ * object or class and it will add the methods you can see below. You
+ * may recognize those method names, they are the same as in jQuery.
  */
 Eos.Observable = function (target) {
 	if ("function" == typeof target) {
@@ -158,6 +200,18 @@ Eos.Observable.trigger = function (message, args)
 	}
 };
 
+/**
+ * **`Eos.Element`**
+ *
+ * One of the most important classes in the entire Eos framework.
+ * `Eos.Element` gives you access to the DOM. Many functions are
+ * limited for security reasons, but a lot of powerful CSS and
+ * jQuery functionality is fully available.
+ *
+ * Most of the API for this class is again borrowed from jQuery and
+ * jQuery is also what is executing these commands on the outside,
+ * so you can expect very similar syntax and behavior.
+ */
 Eos.Element = Class.extend(function (selname) {
 	if ("undefined" == typeof selname) {
 		var selname = 'sel'+Eos.Backend.getUnique();
@@ -330,7 +384,12 @@ Eos.Element.prototype.end = function ()
 };
 
 /**
- * Set the local bounds cache.
+ * **`Eos.Element.bounds()`**
+ *
+ * Updates the local bounds cache or returns the current value.
+ *
+ * In order to remove the need for constant asynchronous calls out of
+ * the sandbox, `Eos.Element` caches it's own size locally.
  */
 Eos.Element.prototype.bounds = function (bounds) {
 	if (bounds) {
@@ -350,6 +409,13 @@ Eos.Element.prototype.doLayout = function () {
 	this.css('height', this.currentBounds.height);
 };
 
+/**
+ * **`Eos.Media`**
+ *
+ * This element is used for placing images and videos.
+ *
+ * **Note:** Videos are not yet supported.
+ */
 Eos.Media = Eos.Element.extend(function (loc)
 {
 	if (!loc) throw 'Eos.Media(): No location provided';
@@ -407,8 +473,19 @@ Eos.Media.prototype.doLayout = function ()
 	}
 };
 
+/**
+ * **`Eos.Layout`**
+ *
+ * This is simply the base class for Eos' layout algorithms.
+ */
 Eos.Layout = Class.extend(function () {});
 
+/**
+ * **`Eos.StandardContainer`**
+ *
+ * This class is used as the base for any element that contains and
+ * layouts child elements.
+ */
 Eos.StandardContainer = Eos.Element.extend(function ()
 {
 	this.__super.apply(this, Array.prototype.slice.call(arguments));
@@ -433,6 +510,13 @@ Eos.StandardContainer.prototype.removeChild = function (child)
 	child.remove();
 };
 
+/**
+ * **`Eos.Viewport`**
+ *
+ * The entire browser windows makes up `Eos.Viewport`. All other visual
+ * components should be somewhere in the tree of nodes under this
+ * singleton.
+ */
 Eos.Viewport = Eos.StandardContainer.extend(function ()
 {
 	this.__super('body');
@@ -457,6 +541,11 @@ Eos.Viewport.prototype.doLayout = function ()
 	}
 };
 
+/**
+ * Note that we turn this class into a single object instance now.
+ *
+ * This is one way of creating a singleton in JavaScript.
+ */
 Eos.Viewport = new Eos.Viewport();
 
 Eos.Layout.Full = Eos.Layout.extend(function ()
@@ -464,8 +553,12 @@ Eos.Layout.Full = Eos.Layout.extend(function ()
 	
 });
 
+
 /**
- * Small, partial jQuery emulator.
+ * **`Eos.Query`**
+ *
+ * This class emulates more jQuery functionality. It is by no means
+ * complete, but it includes most of the essentials.
  */
 Eos.Query = function (p) {
 	if (p instanceof Eos.Element) {
