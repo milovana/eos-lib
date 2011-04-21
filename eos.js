@@ -49,6 +49,9 @@ Eos.Backend = {
 
 	makeCallback: function (callback)
 	{
+		if ("function" !== typeof callback) {
+			throw new Error('Eos.Backend(): Could not create callback, input is not a function.');
+		}
 		var callbackId = 'cb'+Eos.Backend.getUnique();
 		Eos.Backend.callbacks[callbackId] = callback;
 		return callbackId;
