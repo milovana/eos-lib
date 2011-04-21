@@ -806,7 +806,9 @@ Eos.PromptBubble = Eos.Bubble.extend(function (buttons, config)
 	this.addClass('eosPromptBubble');
 
 	var listEl = $('<ul></ul>');
-for (key in buttons) {
+	for (key in buttons) {
+		if (!buttons.hasOwnProperty(key)) continue;
+
 		var opt = $.extend({}, Eos.PromptBubble.defaultButtonConfig,
 						   ("function" == typeof buttons[key]) ?
 						       {click: buttons[key]} : 
