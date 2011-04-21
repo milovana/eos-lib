@@ -16,7 +16,7 @@
  * All functionality in the Eos client library is contained in the
  * `Eos` namespace.
  */
-var Eos = {};
+var Eos = window.Eos = {};
 
 /**
  * **`Eos.Backend`**
@@ -33,7 +33,7 @@ Eos.Backend = {
 		return Eos.Backend.unique++;
 	},
 	
-	handleMessage: function (message)
+	handleMessage: function EosBackend_handleMessage(message)
 	{
 		switch (message.data[0]) {
 		case 'start':
@@ -115,10 +115,10 @@ var console = Eos.Console;
 
 		// Copy all static methods and properties
 		var i;
-for (i in this) {
+		for (i in this) {
 			Class[i] = this[i];
 		}
-		
+
 		// Inherit the parent class
 		execCtor = false;
 		Class.prototype = new this();
