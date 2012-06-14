@@ -791,39 +791,74 @@ Eos.Bubble.prototype.close = function ()
 	}
 };
 
-Eos.TextBubble = Eos.Bubble.extend(function (text, config)
+Eos.TextBubble = Eos.Bubble.extend(function (config)
 {
 	this.__super(config);
 
 	this.addClass('eosTextBubble');
 
-	if (text) {
-		this.text(text);
+	if (config.text) {
+		this.text(config.text);
 	}
 });
 
-Eos.PromptBubble = Eos.Bubble.extend(function (buttons, config)
+Eos.PromptBubble = Eos.Bubble.extend(function (config)
 {
 	this.__super(config);
 
 	this.addClass('eosPromptBubble');
 
+  this.sm = config.sm;
+
 	var listEl = $('<ul></ul>');
-	for (key in buttons) {
-		if (!buttons.hasOwnProperty(key)) continue;
+  var buttons = config.buttons;
 
+  // Convert short format to normalized array format, e.g.
+  // buttons: {
+  //   "MyLabel": {
+  //     click: 'timer'
+  //   }
+  // }
+  if (!Eos.Query.isArray(config.buttons)) {
+    var arrButtons = [];
+	  for (var key in buttons) {
+		  if (!buttons.hasOwnProperty(key)) continue;
+
+      var buttonObj = ("object" === typeof buttons[key]) ?
+        buttons[key] :
+        { click: buttons[key] };
+
+      buttonObj.label = key;
+
+      arrButtons.push(buttonObj);
+    }
+    buttons = arrButtons;
+  }
+
+  for (var i = 0, l = buttons.length; i < l; i++) {
 		var opt = $.extend({}, Eos.PromptBubble.defaultButtonConfig,
-						   ("function" == typeof buttons[key]) ?
-						       {click: buttons[key]} : 
-						       buttons[key]);
+						           buttons[i]);
 
-		var btn = $('<a>'+key+'</a>')
+    if ("string" === typeof opt.click ||
+				opt.click instanceof Eos.Slide) {
+      if (!this.sm) {
+        // TODO: Error: Button shorthand handler only available in a SlideManager context
+        return;
+      }
+      opt.click = (function (sm, slide) {
+        return function () {
+          this.sm.go(this.sm.getSlide(slide));
+        };
+      })(this.sm, opt.click);
+    }
+
+		var btnEl = $('<a>'+opt.label+'</a>')
 			.addClass('eosButton')
 			.addClass(opt.color)
 			.addClass(opt.size)
 			.appendTo($('<li></li>').appendTo(listEl));
 
-		if (opt.click) btn.click(opt.click);
+		if (opt.click) btnEl.click(opt.click);
 	}
 
 	listEl.appendTo(this);
@@ -906,7 +941,7 @@ Eos.Slide = Class.extend(function ()
 
 Eos.Slide.prototype.setup = Eos.Slide.prototype.teardown = function ()
 {
-	throw 'Eos.Slide(): Error, you can use Eos.Slide directly, use one of it\'s subclasses';
+	throw 'Eos.Slide(): Error, you cannot use Eos.Slide directly, use one of it\'s subclasses';
 };
 
 Eos.Slide.prototype.transition = function (sm, currentSlide)
@@ -919,33 +954,15 @@ Eos.InteractiveSlide = Eos.Slide.extend(function (config)
 {
 	this.sm = null;
 	this.config = config;
-});
 
-Eos.InteractiveSlide.prototype.normalizeConfig = function ()
-{
-	if (this.config.buttons) {
-		var k, tmp = this.config.buttons;
-		for (k in tmp) {
-			if ("string" == typeof this.config.buttons[k]) {
-				this.config.buttons[k] = {click: this.config.buttons[k]};
-			}
-			if ("string" == typeof this.config.buttons[k].click ||
-				this.config.buttons[k].click instanceof Eos.Slide) {
-				this.config.buttons[k].click = (function (slideName) {
-					return $.proxy(function () {
-						this.sm.go(this.sm.getSlide(slideName));
-					}, this);
-				})(this.config.buttons[k].click);
-			}
-		}
-	}
-};
+  if ("object" !== typeof this.config || this.config === null) {
+    this.config = {};
+  }
+});
 
 Eos.InteractiveSlide.prototype.setup = function (sm)
 {
 	this.sm = sm;
-
-	this.normalizeConfig();
 
 	if (this.config.media) {
 		this.media = new Eos.Media(this.config.media);
@@ -953,13 +970,7 @@ Eos.InteractiveSlide.prototype.setup = function (sm)
 	}
 	
 	this.bubblequeue = new Eos.BubbleQueue(sm);
-	if (this.config.text) {
-		this.bubblequeue.addBubble(new Eos.TextBubble(this.config.text));
-	}
-	
-	if (this.config.buttons) {
-		this.bubblequeue.addBubble(new Eos.PromptBubble(this.config.buttons));
-	}
+  this.initBubbles();
 
 	if (this.config.metronome) {
 		this.metronome = new Eos.Metronome();
@@ -974,18 +985,9 @@ Eos.InteractiveSlide.prototype.setup = function (sm)
 	this.start();
 };
 
-Eos.InteractiveSlide.prototype.teardown = function ()
-{
-	if (this.media) this.sm.removeChild(this.media);
-	if (this.bubblequeue) this.sm.removeChild(this.bubblequeue);
-	if (this.metronome) this.metronome.stop();
-};
-
 Eos.InteractiveSlide.prototype.transition = function (sm, oldSlide)
 {
 	this.sm = sm;
-
-	this.normalizeConfig();
 
 	if (this.config.media === 'keep') {
 		if (oldSlide.media) this.media = oldSlide.media;
@@ -999,13 +1001,7 @@ Eos.InteractiveSlide.prototype.transition = function (sm, oldSlide)
 	}
 
 	this.bubblequeue = oldSlide.bubblequeue;
-	if (this.config.text) {
-		this.bubblequeue.addBubble(new Eos.TextBubble(this.config.text));
-	}
-	
-	if (this.config.buttons) {
-		this.bubblequeue.addBubble(new Eos.PromptBubble(this.config.buttons));
-	}
+	this.initBubbles();
 
 	if (this.config.metronome) {
 		if (oldSlide.metronome) {
@@ -1024,6 +1020,54 @@ Eos.InteractiveSlide.prototype.transition = function (sm, oldSlide)
 	}
 
 	this.start();
+};
+
+Eos.InteractiveSlide.prototype.initBubbles = function ()
+{
+  if (this.config.text) {
+		this.bubblequeue.addBubble(new Eos.TextBubble({
+      text: this.config.text,
+      sm: this.sm
+    }));
+	}
+	
+	if (this.config.buttons) {
+		this.bubblequeue.addBubble(new Eos.PromptBubble({
+      buttons: this.config.buttons,
+      sm: this.sm
+    }));
+	}
+
+  if (this.config.bubbles) {
+    for (var i = 0, l = this.config.bubbles.length; i < l; i++) {
+      var bubble = this.config.bubbles[i];
+      var bubbleClass;
+      switch (bubble.type.toLowerCase()) {
+      case 'text':
+        bubbleClass = Eos.TextBubble;
+        break;
+      case 'buttons':
+        bubbleClass = Eos.PromptBubble;
+        break;
+      default:
+        // TODO: Error
+        continue;
+      }
+
+      delete bubble.type;
+
+      bubble.sm = this.sm;
+
+      this.bubblequeue.addBubble(new bubbleClass(bubble));
+    }
+  }
+};
+
+Eos.InteractiveSlide.prototype.teardown = function ()
+{
+	if (this.media) this.sm.removeChild(this.media);
+	if (this.bubblequeue) this.sm.removeChild(this.bubblequeue);
+	if (this.metronome) this.metronome.stop();
 };
 
 Eos.InteractiveSlide.prototype.start = function ()
