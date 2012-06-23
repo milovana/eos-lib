@@ -747,7 +747,7 @@ Eos.Bubble = Eos.Element.extend(function (config) {
 });
 
 Eos.Bubble.defaultConfig = {
-	autoClose: 'text',
+	autoClose: 'page',
 	anim: true,
 	timeout: null
 };
@@ -761,6 +761,11 @@ Eos.Bubble.prototype.registerParent = function (queue)
 {
 	var self = this;
 	if (this.config.autoClose) {
+    queue.bind('pageChange', function (e, bubble) {
+			if (self.config.autoClose === 'page') {
+				self.close();
+			}
+		});
 		queue.bind('bubbleAdded', function (e, bubble) {
 			if (self.config.autoClose === 'all') {
 				self.close();
@@ -1001,6 +1006,7 @@ Eos.InteractiveSlide.prototype.transition = function (sm, oldSlide)
 	}
 
 	this.bubblequeue = oldSlide.bubblequeue;
+  this.bubblequeue.trigger('pageChange');
 	this.initBubbles();
 
 	if (this.config.metronome) {
