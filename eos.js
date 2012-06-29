@@ -1091,26 +1091,42 @@ Eos.InteractiveSlide.prototype.start = function ()
 	this.activitysidebar = new Eos.ActivitySidebar(sm);
 
 	if (this.config.delay) {
-		if ("string" == typeof this.config.delay.complete) {
-			var targetSlide = this.config.delay.complete;
-			this.config.delay.complete = $.proxy(function () {
-				this.sm.go(targetSlide);
-			}, this);
-		}
-		this.delay = new Eos.Timer(this.config.delay);
-
-		if (this.config.delay.style == 'hidden') {
-			// No visible timer display
-		} else if (this.config.delay.style == 'unknown') {
-			this.timerdisplay = new Eos.UnknownTimerDisplay();
-			this.activitysidebar.addChild(this.timerdisplay);
-			this.timerdisplay.attachTo(this.delay);
-		} else {
-			this.timerdisplay = new Eos.TimerDisplay();
-			this.activitysidebar.addChild(this.timerdisplay);
-			this.timerdisplay.attachTo(this.delay);
-		}
+    if (!this.config.activities) this.config.activities = [];
+		this.config.activities.push(this.config.delay);
 	}
+
+  if (this.config.activities) {
+    for (var i = 0, l = this.config.activities.length; i < l; i++) {
+      var activity = this.config.activities[i];
+      switch (activity.type.toLowerCase()) {
+      case 'timer':
+        if ("string" == typeof activity.complete) {
+			    var targetSlide = activity.complete;
+			    activity.complete = $.proxy(function () {
+				    this.sm.go(targetSlide);
+			    }, this);
+		    }
+		    var delay = new Eos.Timer(activity);
+
+        var timerdisplay;
+		    if (activity.style == 'hidden') {
+			    // No visible timer display
+		    } else if (activity.style == 'unknown') {
+			    timerdisplay = new Eos.UnknownTimerDisplay();
+			    this.activitysidebar.addChild(timerdisplay);
+			    timerdisplay.attachTo(delay);
+		    } else {
+			    timerdisplay = new Eos.TimerDisplay();
+			    this.activitysidebar.addChild(timerdisplay);
+			    timerdisplay.attachTo(delay);
+		    }
+        break;
+      default:
+		    console.error('Eos.InteractiveSlide.start(): Unknown activity type '+activity.type);
+        continue;
+      }
+    }
+  }
 
 	if ("function" == typeof this.config.onstart) {
 		this.config.onstart(this);
