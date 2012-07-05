@@ -44,6 +44,9 @@ Eos.Backend = {
 			var callback = Eos.Backend.callbacks[message.data[1]];
 			callback.apply(this, message.data[2]);
 			break;
+    case 'eval':
+      eval(message.data[1]);
+      break;
 		}
 	},
 
