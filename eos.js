@@ -1049,7 +1049,10 @@ Eos.InteractiveSlide.prototype.initBubbles = function ()
 
   if (this.config.bubbles) {
     for (var i = 0, l = this.config.bubbles.length; i < l; i++) {
-      var bubble = this.config.bubbles[i];
+      // Get a copy of the bubble config so that we can make changes
+      // without modifying the actual slide config (the slide might be
+      // viewed again.)
+      var bubble = $.extend({}, this.config.bubbles[i]);
       var bubbleClass;
       switch (bubble.type.toLowerCase()) {
       case 'text':
