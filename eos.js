@@ -1543,12 +1543,13 @@ Eos.TimerDisplay.prototype.complete = function ()
 {
   this.raphael.clear();
   this.textEl.text('');
+  this.remove();
 };
 
 Eos.TimerDisplay.prototype.cancel = function ()
 {
-  this.raphael.clear();
-  this.textEl.text('');
+  // Canceling is the same as completing for now
+  this.complete();
 };
 
 Eos.UnknownTimerDisplay = Eos.TimerDisplay.extend(function ()
